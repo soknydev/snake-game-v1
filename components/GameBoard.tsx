@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
 interface GameBoardProps {
   snakeColor: string;
@@ -18,7 +18,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
 
   const gridSize = 25; // 25x25 grid for the game board
 
-  const moveSnake = () => {
+  const moveSnake = useCallback(() => {
     setSnake((prev) => {
       const newHead = { ...prev[0] };
 
@@ -55,14 +55,18 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
 
       return [newHead, ...prev.slice(0, -1)];
     });
-  };
+  }, [direction, food]);
 
-  const handleKeyPress = (e: KeyboardEvent) => {
-    if (e.key === "ArrowUp" && direction !== "DOWN") setDirection("UP");
-    if (e.key === "ArrowDown" && direction !== "UP") setDirection("DOWN");
-    if (e.key === "ArrowLeft" && direction !== "RIGHT") setDirection("LEFT");
-    if (e.key === "ArrowRight" && direction !== "LEFT") setDirection("RIGHT");
-  };
+  const handleKeyPress = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp" && direction !== "DOWN") setDirection("UP");
+      if (e.key === "ArrowDown" && direction !== "UP") setDirection("DOWN");
+      if (e.key === "ArrowLeft" && direction !== "RIGHT") setDirection("LEFT");
+      if (e.key === "ArrowRight" && direction !== "LEFT") setDirection("RIGHT");
+    },
+    [direction] // Dependency ensures it's up-to-date
+  );
+
 
   useEffect(() => {
     if (gameOver) return;
@@ -73,7 +77,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
       document.removeEventListener("keydown", handleKeyPress);
       clearInterval(interval);
     };
-  }, [direction, level, food, gameOver]);
+  }, [handleKeyPress, moveSnake, level, gameOver]); // Fixed dependencies
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,16 +92,40 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
             // Draw head
             ctx.fillStyle = snakeColor;
             ctx.fillRect(segment.x * 20, segment.y * 20, 20, 20);
+
+            // Draw eyes based on direction
             ctx.fillStyle = "white";
-            // Draw eyes
-            ctx.beginPath();
-            ctx.arc(segment.x * 20 + 6, segment.y * 20 + 6, 3, 0, Math.PI * 2);
-            ctx.arc(segment.x * 20 + 14, segment.y * 20 + 6, 3, 0, Math.PI * 2);
+            if (direction === "UP") {
+              ctx.beginPath();
+              ctx.arc(segment.x * 20 + 6, segment.y * 20 + 6, 3, 0, Math.PI * 2); // Left eye
+              ctx.arc(segment.x * 20 + 14, segment.y * 20 + 6, 3, 0, Math.PI * 2); // Right eye
+            } else if (direction === "DOWN") {
+              ctx.beginPath();
+              ctx.arc(segment.x * 20 + 6, segment.y * 20 + 14, 3, 0, Math.PI * 2); // Left eye
+              ctx.arc(segment.x * 20 + 14, segment.y * 20 + 14, 3, 0, Math.PI * 2); // Right eye
+            } else if (direction === "LEFT") {
+              ctx.beginPath();
+              ctx.arc(segment.x * 20 + 6, segment.y * 20 + 6, 3, 0, Math.PI * 2); // Top eye
+              ctx.arc(segment.x * 20 + 6, segment.y * 20 + 14, 3, 0, Math.PI * 2); // Bottom eye
+            } else if (direction === "RIGHT") {
+              ctx.beginPath();
+              ctx.arc(segment.x * 20 + 14, segment.y * 20 + 6, 3, 0, Math.PI * 2); // Top eye
+              ctx.arc(segment.x * 20 + 14, segment.y * 20 + 14, 3, 0, Math.PI * 2); // Bottom eye
+            }
             ctx.fill();
-            // Draw mouth
+
+            // Draw mouth based on direction
             ctx.fillStyle = "black";
             ctx.beginPath();
-            ctx.arc(segment.x * 20 + 10, segment.y * 20 + 14, 3, 0, Math.PI);
+            if (direction === "UP") {
+              ctx.arc(segment.x * 20 + 10, segment.y * 20 + 2, 3, 0, Math.PI);
+            } else if (direction === "DOWN") {
+              ctx.arc(segment.x * 20 + 10, segment.y * 20 + 18, 3, 0, Math.PI);
+            } else if (direction === "LEFT") {
+              ctx.arc(segment.x * 20 + 2, segment.y * 20 + 10, 3, Math.PI / 2, (3 * Math.PI) / 2);
+            } else if (direction === "RIGHT") {
+              ctx.arc(segment.x * 20 + 18, segment.y * 20 + 10, 3, (3 * Math.PI) / 2, Math.PI / 2);
+            }
             ctx.fill();
           } else {
             // Draw body
@@ -115,7 +143,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
         ctx.fill();
       }
     }
-  }, [snake, food, snakeColor]);
+  }, [snake, food, snakeColor, direction]);
 
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
