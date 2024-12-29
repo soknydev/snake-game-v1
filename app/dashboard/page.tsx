@@ -1,16 +1,33 @@
 'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import GameBoard from "@/components/GameBoard";
 
 const Dashboard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPaused, setIsPaused] = useState(false);
+  const [snakeColor, setSnakeColor] = useState("#00ff00"); // Default color
+  const [level, setLevel] = useState("easy"); // Default level
 
-  const queryParams = new URLSearchParams(window.location.search);
-  const snakeColor = queryParams.get("color") || "#00ff00";
-  const level = parseInt(queryParams.get("level") || "1", 10);
+  const levelSpeeds: Record<string, number> = {
+    easy: 1,
+    medium: 2,
+    hard: 3,
+    "very hard": 4,
+  };
+
+  useEffect(() => {
+    // Get query parameters
+    const colorParam = searchParams.get("color");
+    const levelParam = searchParams.get("level");
+
+    if (colorParam) setSnakeColor(decodeURIComponent(colorParam)); // Decode the color
+    if (levelParam) setLevel(levelParam);
+
+    console.log("Color:", colorParam, "Level:", levelParam);
+  }, [searchParams]);
 
   const togglePause = () => {
     setIsPaused((prev) => !prev);
@@ -23,7 +40,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8">
       <h1 className="text-[40px] font-bold text-blue-600">Snake Game Dashboard</h1>
-      <GameBoard snakeColor={snakeColor} level={level}  />
+      <GameBoard snakeColor={snakeColor} level={levelSpeeds[level]} />
       <div className="flex gap-4">
         <button
           onClick={togglePause}

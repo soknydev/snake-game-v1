@@ -9,12 +9,14 @@ import RainbowButton from "@/components/ui/rainbow-button";
 
 const Home = () => {
   const [snakeColor, setSnakeColor] = useState<string>("#00ff00");
-  const [level, setLevel] = useState<number>(1);
+  const [level, setLevel] = useState<string>("easy");
   const router = useRouter();
 
   const startGame = () => {
-    router.push(`/dashboard?color=${snakeColor}&level=${level}`);
+    const encodedColor = encodeURIComponent(snakeColor); // Properly encode the selected color
+    router.push(`/dashboard?color=${encodedColor}&level=${level}`);
   };
+
 
   return (
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden rounded-lg border bg-background md:shadow-xl">
@@ -25,7 +27,9 @@ const Home = () => {
         </h1>
         <ColorPicker selectedColor={snakeColor} onColorChange={setSnakeColor} />
         <LevelSelector selectedLevel={level} onLevelChange={setLevel} />
-        <RainbowButton onClick={startGame} >Start Snake Game Now</RainbowButton>;
+        <RainbowButton onClick={startGame} className="rounded-[10px]">
+          Start Snake Game Now
+        </RainbowButton>
       </div>
     </div>
   );
