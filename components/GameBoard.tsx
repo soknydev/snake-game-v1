@@ -3,21 +3,27 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 interface GameBoardProps {
   snakeColor: string;
   level: number;
+  isPaused: boolean;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
+const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level, isPaused }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
   const [food, setFood] = useState({
-    x: Math.floor(Math.random() * 25),
-    y: Math.floor(Math.random() * 25),
+    x: Math.floor(Math.random() * 30),
+    y: Math.floor(Math.random() * 20),
   });
   const [direction, setDirection] = useState("RIGHT");
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
-  const gridSize = 25; // 25x25 grid for the game board
+  const canvasWidth = 600;
+  const canvasHeight = 400;
+  const cellSize = 20; // Each cell is 20x20 pixels
+  const gridWidth = canvasWidth / cellSize; // 30 cells wide
+  const gridHeight = canvasHeight / cellSize; // 20 cells tall
 
+ 
   const moveSnake = useCallback(() => {
     setSnake((prev) => {
       const newHead = { ...prev[0] };
@@ -29,8 +35,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
       if (direction === "DOWN") newHead.y += 1;
 
       // Wrap around the walls
-      newHead.x = (newHead.x + gridSize) % gridSize;
-      newHead.y = (newHead.y + gridSize) % gridSize;
+      newHead.x = (newHead.x + gridWidth) % gridWidth;
+      newHead.y = (newHead.y + gridHeight) % gridHeight;
 
       // Check for self-collision
       const collision = prev.some(
@@ -43,19 +49,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
 
       const ateFood = newHead.x === food.x && newHead.y === food.y;
 
-      // Generate new food if eaten
       if (ateFood) {
+        // Generate new food if eaten
         setFood({
-          x: Math.floor(Math.random() * gridSize),
-          y: Math.floor(Math.random() * gridSize),
+          x: Math.floor(Math.random() * gridWidth),
+          y: Math.floor(Math.random() * gridHeight),
         });
+
+        // Increment the score
         setScore((prevScore) => prevScore + 1);
-        return [newHead, ...prev]; // Grow the snake
+
+        // Grow the snake by adding only the new head
+        return [newHead, ...prev];
       }
 
+      // Move the snake (no growth)
       return [newHead, ...prev.slice(0, -1)];
     });
-  }, [direction, food]);
+  }, [direction, food, gridWidth, gridHeight]);
+  
 
   const handleKeyPress = useCallback(
     (e: KeyboardEvent) => {
@@ -67,24 +79,24 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
     [direction] // Dependency ensures it's up-to-date
   );
 
-
   useEffect(() => {
-    if (gameOver) return;
-
-    document.addEventListener("keydown", handleKeyPress);
-    const interval = setInterval(moveSnake, 300 / level);
-    return () => {
-      document.removeEventListener("keydown", handleKeyPress);
-      clearInterval(interval);
-    };
-  }, [handleKeyPress, moveSnake, level, gameOver]); // Fixed dependencies
+      if (gameOver || isPaused) return; // Pause the game loop when paused
+  
+      document.addEventListener("keydown", handleKeyPress);
+      const interval = setInterval(moveSnake, 300 / level);
+      return () => {
+        document.removeEventListener("keydown", handleKeyPress);
+        clearInterval(interval);
+      };
+    }, [handleKeyPress, moveSnake, level, gameOver, isPaused]); // Added isPaused to dependencies
+  
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.clearRect(0, 0, 500, 500);
+        ctx.clearRect(0, 0, 600, 400);
 
         // Draw snake
         snake.forEach((segment, index) => {
@@ -148,8 +160,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
   const resetGame = () => {
     setSnake([{ x: 10, y: 10 }]);
     setFood({
-      x: Math.floor(Math.random() * gridSize),
-      y: Math.floor(Math.random() * gridSize),
+      x: Math.floor(Math.random() * gridWidth),
+      y: Math.floor(Math.random() * gridHeight),
     });
     setDirection("RIGHT");
     setScore(0);
@@ -158,7 +170,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-sm text-gray-600">Score: {score}</p>
+      <p className="text-[18px] text-gray-600">Score: {score}</p>
       {gameOver ? (
         <div className="text-center">
           <p className="text-red-500 font-bold">Game Over!</p>
@@ -172,8 +184,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ snakeColor, level }) => {
       ) : (
         <canvas
           ref={canvasRef}
-          width={500}
-          height={500}
+          width={canvasWidth}
+          height={canvasHeight}
           className="border-2 border-gray-300 shadow-lg rounded-lg"
         />
       )}
