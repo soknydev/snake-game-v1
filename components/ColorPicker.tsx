@@ -1,4 +1,6 @@
-import React from "react";
+'use client'
+
+import React, { useState, useEffect } from "react";
 
 interface ColorPickerProps {
   selectedColor: string;
@@ -6,6 +8,16 @@ interface ColorPickerProps {
 }
 
 const ColorPicker: React.FC<ColorPickerProps> = ({ selectedColor, onColorChange }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center gap-2">
       <label className="block mb-2 font-medium text-[22px]">Select Snake Color:</label>
@@ -24,3 +36,4 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ selectedColor, onColorChange 
 };
 
 export default ColorPicker;
+
